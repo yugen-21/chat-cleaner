@@ -45,17 +45,21 @@
     <button onclick="downloadPDF()">Download as PDF</button>
 
     <script>
-      function cleanText() {
-        const raw = document.getElementById("inputText").value;
+     <script>
+  function cleanText() {
+    const raw = document.getElementById("inputText").value;
 
-        // Remove pattern like: [10/07/25, 11:38:23 PM] Abba 2:
-        const cleaned = raw.replace(
-          /\[\d{2}\/\d{2}\/\d{2}, \d{1,2}:\d{2}:\d{2} ?(AM|PM)\] [^:]+: /g,
-          "\n"
-        );
+    // Match both formats:
+    // [10/07/25, 11:38:23 PM] Name:
+    // [10-07-2025 23:45] Name:
+    const cleaned = raw.replace(
+      /\[(\d{2}[\/-]\d{2}[\/-]\d{2,4})(,? \d{1,2}:\d{2}(:\d{2})?\s?(AM|PM)?)?\] [^:]+: /g,
+      '\n'
+    );
 
-        document.getElementById("outputText").value = cleaned.trim();
-      }
+    document.getElementById("outputText").value = cleaned.trim();
+  }
+
 
       async function downloadPDF() {
         const { jsPDF } = window.jspdf;
