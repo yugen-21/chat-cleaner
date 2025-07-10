@@ -25,6 +25,11 @@
         margin-right: 10px;
         cursor: pointer;
       }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -38,57 +43,97 @@
     ></textarea>
 
     <button onclick="cleanText()">Clean Text</button>
+    <label>
+      <input type="checkbox" id="removeBreaks" />
+      Remove line breaks between "Dear ... ↴ ... SWS"
+    </label>
 
     <h3>Cleaned Output:</h3>
-    <textarea id="outputText" rows="10" readonly></textarea>
+    <textarea id="outputText" rows="10"></textarea>
 
     <button onclick="downloadPDF()">Download as PDF</button>
 
     <script>
-function cleanText() {
+      function cleanText() {
         const raw = document.getElementById("inputText").value;
+        const cleanBody = document.getElementById("removeBreaks").checked;
         const lines = raw.split("\n");
         const cleanedLines = [];
 
+        // Clean out chat timestamps
         for (let line of lines) {
-          // Format 1: [10/07/25, 11:38:23 PM] Name:
           const format1 =
             /^\[\d{2}\/\d{2}\/\d{2}, \d{1,2}:\d{2}:\d{2} ?(AM|PM)?\] [^:]+: /;
-          // Format 2: [10-07-2025 23:45] Name:
           const format2 = /^\[\d{2}-\d{2}-\d{4} \d{2}:\d{2}\] [^:]+: /;
+          const format3 = /^\[\d{2}\/\d{2}, \d{1,2}:\d{2} ?(am|pm)\] [^:]+: /i;
 
           if (format1.test(line)) {
             cleanedLines.push(line.replace(format1, "\n"));
           } else if (format2.test(line)) {
             cleanedLines.push(line.replace(format2, "\n"));
+          } else if (format3.test(line)) {
+            cleanedLines.push(line.replace(format3, "\n"));
           } else {
             cleanedLines.push(line);
           }
         }
 
-        document.getElementById("outputText").value = cleanedLines
-          .join("\n")
-          .trim();
+        let result = cleanedLines.join("\n").trim();
+
+        // Additional space cleaning that preserves letter format
+        if (cleanBody) {
+          // For letter format, only clean extra spaces within the body text itself
+          result = result.replace(
+            /(Dear .+?,\n\n)([\s\S]+?)(\n\nRegards,\nSWS)/g,
+            (match, dear, body, closing) => {
+              // Clean only the body part, preserve the structure
+              const cleanedBody = body
+                .replace(/\s+/g, " ") // Replace all whitespace with single spaces
+                .trim(); // Remove leading/trailing spaces
+              return `${dear}${cleanedBody}${closing}`;
+            }
+          );
+        } else {
+          // For non-letter format, general space cleaning
+          result = result
+            .replace(/\n\s*\n/g, "\n") // Remove empty lines with spaces
+            .replace(/^\s+/gm, "") // Remove leading spaces from each line
+            .replace(/\s+$/gm, "") // Remove trailing spaces from each line
+            .replace(/\n{3,}/g, "\n\n"); // Replace 3+ consecutive newlines with just 2
+        }
+
+        document.getElementById("outputText").value = result;
       }
-
-
-
 
       async function downloadPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
         const text = document.getElementById("outputText").value;
 
-        // Set font size (default is 16; reduce for more content per page)
-        doc.setFontSize(10); // You can try 8 or 9 if you want it even smaller
-
-        // Split long text into multiple lines that fit the page width
+        doc.setFontSize(8);
+        const lineHeight = 4;
+        const marginTop = 20;
+        const marginLeft = 15;
+        const maxLinesPerPage = Math.floor((297 - marginTop - 20) / lineHeight);
         const lines = doc.splitTextToSize(text, 180);
-        doc.text(lines, 15, 20);
+
+        let cursorY = marginTop;
+        let lineCount = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+          if (lineCount === maxLinesPerPage) {
+            doc.addPage();
+            cursorY = marginTop;
+            lineCount = 0;
+          }
+          doc.text(lines[i], marginLeft, cursorY);
+          cursorY += lineHeight;
+          lineCount++;
+        }
 
         doc.save("cleaned_chat.pdf");
       }
     </script>
   </body>
 </html>
+
