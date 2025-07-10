@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat Cleaner to PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 30px;
+        max-width: 800px;
+        margin: auto;
+      }
+      textarea {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        resize: vertical;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 14px;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Chat Cleaner to PDF</h2>
+
+    <label for="inputText">Paste chat text:</label>
+    <textarea
+      id="inputText"
+      rows="10"
+      placeholder="Paste your exported chat here..."
+    ></textarea>
+
+    <button onclick="cleanText()">Clean Text</button>
+
+    <h3>Cleaned Output:</h3>
+    <textarea id="outputText" rows="10" readonly></textarea>
+
+    <button onclick="downloadPDF()">Download as PDF</button>
+
+    <script>
+      function cleanText() {
+        const raw = document.getElementById("inputText").value;
+
+        // Remove pattern like: [10/07/25, 11:38:23 PM] Abba 2:
+        const cleaned = raw.replace(
+          /\[\d{2}\/\d{2}\/\d{2}, \d{1,2}:\d{2}:\d{2} ?(AM|PM)\] [^:]+: /g,
+          "\n"
+        );
+
+        document.getElementById("outputText").value = cleaned.trim();
+      }
+
+      async function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const text = document.getElementById("outputText").value;
+
+        // Set font size (default is 16; reduce for more content per page)
+        doc.setFontSize(10); // You can try 8 or 9 if you want it even smaller
+
+        // Split long text into multiple lines that fit the page width
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, 15, 20);
+
+        doc.save("cleaned_chat.pdf");
+      }
+    </script>
+  </body>
+</html>
