@@ -45,20 +45,33 @@
     <button onclick="downloadPDF()">Download as PDF</button>
 
     <script>
-     <script>
-  function cleanText() {
-    const raw = document.getElementById("inputText").value;
+function cleanText() {
+        const raw = document.getElementById("inputText").value;
+        const lines = raw.split("\n");
+        const cleanedLines = [];
 
-    // Match both formats:
-    // [10/07/25, 11:38:23 PM] Name:
-    // [10-07-2025 23:45] Name:
-    const cleaned = raw.replace(
-      /\[(\d{2}[\/-]\d{2}[\/-]\d{2,4})(,? \d{1,2}:\d{2}(:\d{2})?\s?(AM|PM)?)?\] [^:]+: /g,
-      '\n'
-    );
+        for (let line of lines) {
+          // Format 1: [10/07/25, 11:38:23 PM] Name:
+          const format1 =
+            /^\[\d{2}\/\d{2}\/\d{2}, \d{1,2}:\d{2}:\d{2} ?(AM|PM)?\] [^:]+: /;
+          // Format 2: [10-07-2025 23:45] Name:
+          const format2 = /^\[\d{2}-\d{2}-\d{4} \d{2}:\d{2}\] [^:]+: /;
 
-    document.getElementById("outputText").value = cleaned.trim();
-  }
+          if (format1.test(line)) {
+            cleanedLines.push(line.replace(format1, "\n"));
+          } else if (format2.test(line)) {
+            cleanedLines.push(line.replace(format2, "\n"));
+          } else {
+            cleanedLines.push(line);
+          }
+        }
+
+        document.getElementById("outputText").value = cleanedLines
+          .join("\n")
+          .trim();
+      }
+
+
 
 
       async function downloadPDF() {
